@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebGL solar system</title>
+    <meta name="description" content="WebGL 太阳系">
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script id="VertexShader" type="x-shader/x-vertex">
+        precision mediump float;
+        attribute vec3 aVertexPosition; // 顶点坐标
+        attribute vec3 aVertexNormal;   // 顶点法向量
+        attribute vec2 aTextureCoord;   // 纹理坐标
+
+        uniform mat4 uMVMatrix;     // 模型视图矩阵
+        uniform mat4 uPMatrix;      // 投影矩阵
+        uniform mat4 uVMatrix;
+        uniform mat4 uMMatrix;
+
+        uniform mat4 uNMatrix;      // 用来变换法向量的矩阵
+
+        varying vec2 vTextureCoord;     // 纹理坐标
+
+        uniform float radius;       // 行星半径
+
+        varying vec3 normal;
+        varying vec4 vPosition;    
+        void main(void) {
+            vPosition = uMMatrix * vec4(aVertexPosition * radius, 1.0);
+            gl_Position = uPMatrix * uVMatrix * vPosition;
+
+            vTextureCoord = aTextureCoord;
+            normal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+        }
+    </script>
+    <script id="FragmentShader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D uSampler;
+
+        varying vec2 vTextureCoord;
+        varying vec3 normal;
+        varying vec4 vPosition;
+
+        uniform vec3 uAmbientColor;         // 环境光
+        uniform vec3 uLightColor;           // 直射光颜色
+
+        uniform bool uUseLighting;
+        void main(void) {
+            vec3 lightWeighting = vec3(1.0, 1.0, 1.0);
+            vec3 lightDirection = normalize(-vPosition.xyz);
+            float dlightWeighting = max(dot(normal, lightDirection), 0.0);
+
+            if (uUseLighting) {
+                lightWeighting = uAmbientColor + uLightColor * dlightWeighting;
+            }
+
+            vec4 textureColor = texture2D(uSampler, vTextureCoord);
+            gl_FragColor = vec4(textureColor.rgb * lightWeighting, textureColor.a);
+        }
+    </script>
+    <script id="OrbitVertexShader" type="x-shader/x-vertex">
+        precision mediump float;
+        
+        uniform float radius;
+        uniform mat4 uPMatrix;
+        uniform mat4 uVMatrix;
+        attribute float theta;
+        void main(void) {
+            gl_Position = uPMatrix * uVMatrix * vec4(radius * cos(theta), 0, radius * sin(theta), 1.0);
+        }
+    </script>
+    <script id="OrbitFragShader" type="x-shader/x-fragment">
+        void main(void) {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+    </script>
+</head>
+<body>
+    <canvas id="webgl"></canvas>
+
+    <script src="./js/gl-matrix.js"></script>
+    <script src="./js/webgl-debug.js"></script>
+    <script src="./js/dat.gui.min.js"></script>
+    <script src="./js/util.js"></script>
+    <script src="./js/planet.js"></script>
+    <script src="./js/planet-data.js"></script>
+    <script src="./js/index.js"></script>
+</body>
+</html>
